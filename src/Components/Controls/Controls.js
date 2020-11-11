@@ -1,20 +1,22 @@
 import React, { useState } from "react";
 import "./Controls.css";
-import SvgPlay from "../../Assets/play.js";
-import SvgPause from "../../Assets/pause.js";
-import SvgGraph from "../../Assets/graph.js";
-import SvgRepeat from "../../Assets/repeat.js";
-import SvgConfigure from "../../Assets/configure.js";
-import SvgFullScreen from "../../Assets/fullScreen.js";
-import { PinDropSharp } from "@material-ui/icons";
+import {
+  SvgConfigure,
+  SvgFullScreen,
+  SvgGraph,
+  SvgRepeat,
+  Svg3D,
+} from "../../Assets/icons";
+import PlayArrowIcon from "@material-ui/icons/PlayArrow";
+import PauseIcon from "@material-ui/icons/Pause";
 
 //---------------Individual Control Components --------------
 
-function Play({ status, onClick }) {
-  return status == "play" ? (
-    <SvgPlay onClick={onClick} className="icon" />
+function Play({ isPaused, toggleIsPaused }) {
+  return isPaused ? (
+    <PlayArrowIcon onClick={toggleIsPaused} className="icon icon-materialui" />
   ) : (
-    <SvgPause onClick={onClick} className="icon" />
+    <PauseIcon onClick={toggleIsPaused} className="icon icon-materialui" />
   );
 }
 function Repeat() {
@@ -29,28 +31,36 @@ function Graph({ status, onClick }) {
 
 //-----------------------------------------------------------
 
-function Controls(props) {
-  const [playStatus, setPlayStatus] = useState("pause ");
+function Controls({ isPaused, toggleIsPaused, reloadExperiment }) {
   const [configureStatus, setConfigureStatus] = useState("on");
   const [graphStatus, setGraphStatus] = useState("off");
+  const [isFullScreenOn, setFullScreenStatus] = useState(false);
 
-  function handlePlayClick() {
-    setPlayStatus(playStatus == "play" ? "pause" : "play");
-  }
   function handleConfigureClick() {
-    setConfigureStatus(configureStatus == "on" ? "off" : "on");
+    setConfigureStatus(configureStatus === "on" ? "off" : "on");
   }
   function handleGraphClick() {
-    setGraphStatus(graphStatus == "on" ? "off" : "on");
+    setGraphStatus(graphStatus === "on" ? "off" : "on");
   }
-
+  function IsReload() {
+    document.querySelector(".reload").addEventListener("click", () => {
+      window.location.reload(true);
+    });
+  }
+  function handleFullScreenClick() {
+    setFullScreenStatus(!isFullScreenOn);
+  }
   return (
     <div className="controls">
-      <Play status={playStatus} onClick={handlePlayClick} />
-      <Repeat />
+      <Play isPaused={isPaused} toggleIsPaused={toggleIsPaused} />
+      <Repeat
+        className={("reload", (<IsReload />))}
+        onClick={reloadExperiment}
+      />
       <Configure status={configureStatus} onClick={handleConfigureClick} />
       <Graph status={graphStatus} onClick={handleGraphClick} />
-      <SvgFullScreen onClick={props.handleFullScreenClick} className={"icon"} />
+      <SvgFullScreen onClick={handleFullScreenClick} className={"icon"} />
+      <Svg3D className={"icon"} />
     </div>
   );
 }

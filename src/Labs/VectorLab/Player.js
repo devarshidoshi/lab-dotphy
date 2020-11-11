@@ -2,14 +2,21 @@ import React, { useState, useEffect } from "react";
 import P5Wrapper from "react-p5-wrapper";
 import { v4 as uuid } from "uuid";
 import Sketch from "./Sketch";
-import Operation from "../../Components/Operations/Operation";
 import "./VectorLab.css";
+
+import Operation from "../../Components/Operations/Operation";
+import Controls from "../../Components/Controls/Controls";
+
 import AddIcon from "@material-ui/icons/Add";
 import EditIcon from "@material-ui/icons/Edit";
 import { Fab, Slider } from "@material-ui/core";
 import { SvgSlider } from "../../Assets/icons";
+import Captions from "../../Components/Captions/Captions";
+import Loader from "../../Components/Loader/Loader";
 
-let value = 0;
+import { getTutorial, getAudio } from "../../services/firebase";
+
+let State = {};
 
 const DISPLAY_SIZE = {
   width:
@@ -37,6 +44,11 @@ function isDesktop() {
   return DISPLAY_SIZE.width > 700;
 }
 
+async function getData(tutorialRef, audioRef) {
+  State = await getTutorial(tutorialRef);
+  let audio = await getAudio(audioRef);
+}
+
 function DisplayVectorsTab({
   vectorData,
   vectorsData,
@@ -54,7 +66,7 @@ function DisplayVectorsTab({
   if (vectorData.id === activeVectorId) {
     xComp = (
       <Slider
-        value={vectorData.x}
+        defaultValue={vectorData.x}
         onChange={(e, newValue) => {
           hanldeXCompChange(e, newValue, vectorData.id);
         }}
@@ -65,7 +77,7 @@ function DisplayVectorsTab({
     );
     yComp = (
       <Slider
-        value={vectorData.y}
+        defaultValue={vectorData.y}
         onChange={(e, newValue) => {
           handleYCompChange(e, newValue, vectorData.id);
         }}
@@ -143,12 +155,57 @@ function DisplayVectors({
   );
 }
 
-export default function VectorLab() {
+export default function PlayerVectorLab(props) {
+  //-------Original APP's State --------
   const [num, setNum] = useState(2);
   const [vectorsData, setVectorsData] = useState([randomVector("V1")]);
   const [activeVectorId, setActiveVectorId] = useState(vectorsData[0]["id"]);
   const [isMouseInAddIcon, setIsMouseInAddIcon] = useState(false);
   const [isSliderActive, setSliderStatus] = useState(false);
+  const [captionText, setCaptionText] = useState("");
+  //------------------------------------
+
+  //---- Plyer's Specific  State -------
+  const [timeThen, setTimeThen] = useState(new Date().getTime());
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [pausedAt, setPausedAt] = useState(new Date());
+  // -------------------------
+
+  //--- Get the Data from firebase storage--
+  useEffect(() => {
+    console.log();
+    let tutorialRef = props.location.state.tutorialRef;
+    let audioRef = tutorialRef
+      .replace("Tutorials", "Audio")
+      .replace("json", "mp4");
+
+    getData(tutorialRef, audioRef).then(() => {
+      PlayTutorial();
+      setIsLoaded(true);
+    });
+  }, []);
+  //-----------------------------------------
+  function PlayTutorial() {
+    setInterval(() => {
+      if (!isPaused) {
+        let counter = new Date().getTime() - timeThen;
+        if (counter in State) {
+          setNum(State[counter]["num"]);
+          setVectorsData(State[counter]["vectorsData"]);
+          setActiveVectorId(State[counter]["activeVectorId"]);
+          setCaptionText(State[counter]["message"]);
+        }
+      }
+    }, 1);
+  }
+
+  function toggleIsPaused() {
+    setIsPaused(!isPaused);
+  }
+  function reloadExperiment() {
+    setTimeThen(new Date());
+  }
 
   function addNewVector(e) {
     //Add a new Vector Randomly
@@ -160,7 +217,6 @@ export default function VectorLab() {
   }
 
   function addOperation(e, v1_id, v2_id, operationName, operationValue) {
-    //Apply a operation on a specific vector
     e.preventDefault();
     let copyVectorsData = vectorsData.slice();
     let v1 = getVectorData(v1_id, copyVectorsData);
@@ -176,25 +232,17 @@ export default function VectorLab() {
   }
 
   function hanldeXCompChange(e, newValue, id) {
-    let copyVectorsData = [];
-    for (let vectorData of vectorsData) {
-      copyVectorsData.push(Object.assign({}, vectorData));
-    }
+    let copyVectorsData = vectorsData.slice();
     copyVectorsData.find((vector) => {
       return vector.id === id;
     }).x = newValue;
-    setVectorsData(copyVectorsData);
   }
 
   function handleYCompChange(e, newValue, id) {
-    let copyVectorsData = [];
-    for (let vectorData of vectorsData) {
-      copyVectorsData.push(Object.assign({}, vectorData));
-    }
+    let copyVectorsData = vectorsData.slice();
     copyVectorsData.find((vector) => {
       return vector.id === id;
     }).y = newValue;
-    setVectorsData(copyVectorsData);
   }
   function handleSliderClick() {
     setSliderStatus(!isSliderActive);
@@ -202,50 +250,62 @@ export default function VectorLab() {
 
   return (
     <React.Fragment>
-      <div className="vectorlab">
-        <div>
-          <P5Wrapper
-            sketch={Sketch}
-            vectorsData={vectorsData}
-            activeVectorId={activeVectorId}
+      {isLoaded ? (
+        <>
+          <Controls
+            isPaused={isPaused}
+            toggleIsPaused={toggleIsPaused}
+            reloadExperiment={reloadExperiment}
           />
-        </div>
-        <div style={{ marginRight: "10px" }}>
-          <DisplayVectors
-            vectorsData={vectorsData}
-            activeVectorId={activeVectorId}
-            handleActiveVector={handleActiveVector}
-            hanldeXCompChange={hanldeXCompChange}
-            handleYCompChange={handleYCompChange}
-            addOperation={addOperation}
-            className={
-              isSliderActive ? "displayvector-open" : "displayvector-close"
-            }
-          />
-          <SvgSlider
-            className={`svg-slider ${
-              isSliderActive ? "svg-slider-on" : "svg-slider-off"
-            }`}
-            onClick={handleSliderClick}
-          />
+          <div className="vectorlab">
+            <div>
+              <P5Wrapper
+                sketch={Sketch}
+                vectorsData={vectorsData}
+                activeVectorId={activeVectorId}
+              />
+              <Captions captionText={captionText} />
+            </div>
+            <div style={{ marginRight: "10px" }}>
+              <DisplayVectors
+                vectorsData={vectorsData}
+                activeVectorId={activeVectorId}
+                handleActiveVector={handleActiveVector}
+                hanldeXCompChange={hanldeXCompChange}
+                handleYCompChange={handleYCompChange}
+                addOperation={addOperation}
+                className={
+                  isSliderActive ? "displayvector-open" : "displayvector-close"
+                }
+              />
+              <SvgSlider
+                className={`svg-slider ${
+                  isSliderActive ? "svg-slider-on" : "svg-slider-off"
+                }`}
+                onClick={handleSliderClick}
+              />
 
-          <div className="vectorlab__input">
-            <Fab
-              onClick={addNewVector}
-              variant="extended"
-              color="secondary"
-              onMouseEnter={() => {
-                setIsMouseInAddIcon(true);
-              }}
-              onMouseLeave={() => setIsMouseInAddIcon(false)}
-              style={{ padding: "10px" }}
-            >
-              <AddIcon className="vactorlab_input_icon" />
-              {isMouseInAddIcon && (isDesktop() ? "New Vector" : "")}
-            </Fab>
+              <div className="vectorlab__input">
+                <Fab
+                  onClick={addNewVector}
+                  variant="extended"
+                  color="secondary"
+                  onMouseEnter={() => {
+                    setIsMouseInAddIcon(true);
+                  }}
+                  onMouseLeave={() => setIsMouseInAddIcon(false)}
+                  style={{ padding: "10px" }}
+                >
+                  <AddIcon className="vactorlab_input_icon" />
+                  {isMouseInAddIcon && (isDesktop() ? "New Vector" : "")}
+                </Fab>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        </>
+      ) : (
+        <Loader />
+      )}
     </React.Fragment>
   );
 }

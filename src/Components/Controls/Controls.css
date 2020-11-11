@@ -3,6 +3,10 @@
   flex-direction: column;
   margin: 30px 0px 0px 10px;
 }
+.icon-materialui {
+  color: white !important;
+}
+
 .icon {
   width: 50px;
   height: 50px;
@@ -27,20 +31,20 @@
 @media only screen and (max-width: 650px) {
   .controls {
     display: flex;
-    position: absolute;
-    top: 515px;
+    height: 0px;
+    margin: 0px;
     flex-direction: row;
     justify-content: space-between;
-    margin: 10px 30px 10px 10px;
-    padding: 100px 10px 0px 10px;
     width: 100vw;
   }
 
   .icon {
-    width: 50px;
-    height: 50px;
-    padding: 12px;
-    margin: 0px;
+    height: 70px;
+    padding: 13px;
+    margin: 5px 0px 0px 5px;
     fill: #666;
+  }
+  .icon:hover {
+    box-shadow: 0px 0px 0px 0px;
   }
 }

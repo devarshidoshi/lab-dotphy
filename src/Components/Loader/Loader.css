@@ -1,0 +1,39 @@
+.loader {
+  background-color: #18181a;
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 90vh;
+  justify-content: center;
+  align-items: center;
+}
+
+.loader img {
+  animation-name: rotate;
+  animation-iteration-count: infinite;
+  animation-duration: 0.01s;
+}
+.loader__progress {
+  margin-top: 50px;
+  width: 10vw !important;
+  border: 1px solid black;
+}
+
+@keyframes rotate {
+  0% {
+    transform: rotate(-2deg);
+  }
+
+  50% {
+    transform: rotate(1deg);
+  }
+  100% {
+    transform: rotate(-deg);
+  }
+}
+
+@media only screen and (max-width: 650px) {
+  .loader__progress {
+    width: 50vw !important;
+  }
+}
